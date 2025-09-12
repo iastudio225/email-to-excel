@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Convertisseur Email vers Excel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>📧 Convertisseur Email vers Excel</h1>
+
+    <div class="info">
+      <strong>Instructions :</strong> Collez vos adresses email (une par ligne).
+      <br><strong>Format supporté :</strong> <code>nom.prenom@domaine.com</code> ou <code>nomprenom@domaine.com</code>
+    </div>
+
+    <div class="input-section">
+      <label for="emailInput">Adresses Email (une par ligne) :</label>
+      <textarea id="emailInput" placeholder="abdoulmadjid@test.ca
+abdramane.diabate@test.ca
+abla.etty@test.ca"></textarea>
+    </div>
+
+    <div class="buttons">
+      <button class="btn-convert" onclick="convertEmails()">🔄 Convertir</button>
+      <button class="btn-download" onclick="downloadExcel()" disabled>📥 Télécharger Excel</button>
+      <button class="btn-csv" onclick="downloadOutlookCSV()" disabled>📄 Télécharger CSV</button>
+      <button class="btn-clear" onclick="clearAll()">🗑️ Effacer</button>
+    </div>
+
+    <!-- Options d'export -->
+    <div>
+      <label for="emailsPerSheet" style="margin-left:10px;">Emails par feuille :</label>
+      <select id="emailsPerSheet" style="margin-right:10px;">
+        <option value="0">Tout en une seule feuille</option>
+        <option value="10">10</option>
+        <option value="15" selected>15</option>
+        <option value="20">20</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+    </div>
+
+    <div class="export-options">
+      <label>
+        <input type="checkbox" id="useSemicolon"> Utiliser ";" comme séparateur (au lieu de ",")
+      </label>
+      <br>
+      <label id="singleFileContainer">
+        <input type="checkbox" id="singleFile" checked> Exporter dans un seul fichier (plusieurs feuilles)
+      </label>
+    </div>
+
+    <div id="preview" class="preview" style="display: none;">
+      <div class="count" id="countDisplay"></div>
+      <table id="resultsTable">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Prénom</th>
+            <th>Email</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  
+</body>
+</html>
