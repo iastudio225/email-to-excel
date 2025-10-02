@@ -66,6 +66,7 @@ function displayResults() {
   const countDisplay = document.getElementById('countDisplay');
   const downloadBtn = document.querySelector('.btn-download');
   const csvBtn = document.querySelector('.btn-csv');
+  const ldifBtn = document.querySelector('.btn-ldif');
 
   if (convertedData.length === 0) {
     preview.style.display = 'none';
@@ -98,6 +99,7 @@ function displayResults() {
   preview.style.display = 'block';
   downloadBtn.disabled = false;
   csvBtn.disabled = false;
+  ldifBtn.disabled = false;
   console.log('Affichage terminé, tableau mis à jour.');
 }
 
@@ -219,123 +221,45 @@ document.getElementById('emailsPerSheet').addEventListener('change', function() 
   }
 });
 
-function downloadOutlookCSV() {
+function btoa_utf8(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
+function downloadLDIF() {
   if (convertedData.length === 0) {
     alert("Aucune donnée à exporter.");
     return;
   }
 
-  // Charger JSZip si ce n'est pas déjà fait
-  if (typeof JSZip === 'undefined') {
-    alert("La bibliothèque JSZip n'est pas chargée. Veuillez rafraîchir la page.");
-    return;
-  }
-
-  const singleFile = document.getElementById('singleFile').checked;
-  const emailsPerSheetValue = parseInt(document.getElementById('emailsPerSheet').value, 10);
-  const totalEmails = convertedData.length;
+  let ldifContent = '';
   
-  // Déterminer le mode d'export
-  const isAllInOneSheet = emailsPerSheetValue === 0;
-  if (isAllInOneSheet) {
-    console.log("Mode une seule feuille sélectionné - tous les emails seront dans une seule feuille");
-  }
-  
-  const emailsPerSheet = isAllInOneSheet ? totalEmails : (emailsPerSheetValue || 15);
-  const expectedParts = isAllInOneSheet ? 1 : Math.ceil(totalEmails / emailsPerSheet);
-  const now = new Date();
-  const currentDate = now.toISOString().split("T")[0];
-  const currentTime = now.getHours().toString().padStart(2, '0') + 
-                   now.getMinutes().toString().padStart(2, '0') + 
-                   now.getSeconds().toString().padStart(2, '0');
-  
-  console.log("=== Début de l'export (format Outlook) ===");
-  console.log("Mode:", singleFile ? "Fichier unique" : "Fichiers séparés (ZIP)");
-  console.log("Nombre d'emails par partie:", emailsPerSheet);
-  console.log("Nombre total d'emails:", totalEmails);
-  console.log("Nombre de parties attendues:", expectedParts);
-
-  // Entête Outlook
-  const headers = [
-    "First Name","Middle Name","Last Name","Title","Suffix","Nickname","Given Yomi","Surname Yomi",
-    "E-mail Address","E-mail 2 Address","E-mail 3 Address","Home Phone","Home Phone 2","Business Phone",
-    "Business Phone 2","Mobile Phone","Car Phone","Other Phone","Primary"
-  ];
-
-  if (singleFile || isAllInOneSheet) {
-    // Mode fichier unique : un seul CSV avec tous les contacts
-    const separator = document.getElementById("useSemicolon").checked ? ";" : ",";
-    console.log("Création d'un fichier CSV unique avec tous les contacts");
-
-    const rows = convertedData.map(d => [
-      d.prenom || "", "", d.nom || "", "", "", "", "", "",
-      d.email || "", "", "", "", "", "", "", "", "", "", ""
-    ]);
-
-    const csvContent = [headers, ...rows]
-      .map(row => row.map(value => `"${value}"`).join(separator))
-      .join("\n");
-
-    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `contacts_outlook_${currentDate}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  convertedData.forEach(data => {
+    const displayName = `${data.prenom} ${data.nom}`;
+    const dn = `cn=${data.prenom} ${data.nom},mail=${data.email}`;
     
-    console.log("Export terminé: 1 fichier CSV créé");
-    window.alert("Fichier CSV unique créé avec tous les contacts");
+    ldifContent += `dn:: ${btoa_utf8(dn)}\n`;
+    ldifContent += 'objectClass: top\n';
+    ldifContent += 'objectClass: inetOrgPerson\n';
+    ldifContent += 'objectClass: mozillaAbPersonAlpha\n';
+    ldifContent += `displayname:: ${btoa_utf8(displayName)}\n`;
+    ldifContent += `mail: ${data.email}\n`;
+    ldifContent += `sn: ${data.nom}\n`;
+    ldifContent += `givenname: ${data.prenom}\n`;
+    ldifContent += '\n';
+  });
 
-  } else {
-    // Mode fichiers séparés (ZIP)
-    const zip = new JSZip();
-    let fileCount = 0;
-    const separator = document.getElementById("useSemicolon").checked ? ";" : ",";
+  const currentDate = new Date().toISOString().split("T")[0];
+  downloadFile(ldifContent, `contacts_${currentDate}.ldif`, 'application/x-ldif;charset=utf-8');
+}
 
-    console.log("Création du fichier ZIP...");
-
-    for (let i = 0; i < totalEmails; i += emailsPerSheet) {
-      const currentEmails = convertedData.slice(i, i + emailsPerSheet);
-      console.log(`Ajout fichier ${fileCount + 1} avec ${currentEmails.length} emails (position ${i} sur ${totalEmails})`);
-
-      const rows = currentEmails.map(d => [
-        d.prenom || "", "", d.nom || "", "", "", "", "", "",
-        d.email || "", "", "", "", "", "", "", "", "", "", ""
-      ]);
-
-      const csvContent = [headers, ...rows]
-        .map(row => row.map(value => `"${value}"`).join(separator))
-        .join("\n");
-
-      const fileName = `contacts_outlook_partie${(fileCount + 1).toString().padStart(2, '0')}.csv`;
-      zip.file(fileName, "\uFEFF" + csvContent);
-      fileCount++;
-    }
-
-    console.log("=== Création du ZIP terminée ===");
-    console.log(`Nombre de fichiers ajoutés: ${fileCount}`);
-    console.log(`Nombre de parties attendues: ${expectedParts}`);
-
-    // Générer et télécharger le ZIP
-    zip.generateAsync({type:"blob"})
-      .then(function(content) {
-        const url = URL.createObjectURL(content);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `contacts_outlook_${currentDate}_${currentTime}.zip`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        
-        window.alert(`Archive ZIP créée avec ${fileCount} fichier(s) CSV`);
-      })
-      .catch(function(error) {
-        console.error("Erreur lors de la création du ZIP:", error);
-        window.alert("Erreur lors de la création de l'archive ZIP");
-      });
-  }
+function downloadFile(content, filename, type) {
+  const blob = new Blob(["\uFEFF" + content], { type: type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }

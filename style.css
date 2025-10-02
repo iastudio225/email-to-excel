@@ -8,6 +8,28 @@ body {
   color: #1f2937;
 }
 
+.btn-csv {
+  background: #0284c7;
+  color: white;
+}
+
+.btn-csv:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);
+  filter: brightness(1.05);
+}
+
+.btn-ldif {
+  background: #6366f1;
+  color: white;
+}
+
+.btn-ldif:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+  filter: brightness(1.05);
+}
+
 .container {
   background: white;
   padding: 40px;
