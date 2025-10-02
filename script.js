@@ -194,6 +194,8 @@ function clearAll() {
   document.getElementById('emailInput').value = '';
   document.getElementById('preview').style.display = 'none';
   document.querySelector('.btn-download').disabled = true;
+  document.querySelector('.btn-csv').disabled = true;
+  document.querySelector('.btn-ldif').disabled = true;
   convertedData = [];
 }
 
